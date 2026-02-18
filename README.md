@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Weapon Store
 
-## Getting Started
+A Next.js e-commerce demo that sells a product (Axe) using [Creem](https://creem.io) for payments, with purchase records stored in a PostgreSQL database (Neon) via Drizzle ORM.
 
-First, run the development server:
+## Stack
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Framework:** Next.js 16 (App Router)
+- **Payments:** [Creem](https://creem.io) (`@creem_io/nextjs`)
+- **Database:** PostgreSQL on [Neon](https://neon.tech), with [Drizzle ORM](https://orm.drizzle.team)
+- **UI:** React 19, Tailwind CSS, Radix UI, shadcn-style components
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Prerequisites
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Node.js 18+
+- pnpm (or npm/yarn)
+- A [Creem](https://creem.io) account (API key + webhook secret)
+- A PostgreSQL database (e.g. [Neon](https://neon.tech))
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Setup
 
-## Learn More
+1. **Clone and install**
 
-To learn more about Next.js, take a look at the following resources:
+   ```bash
+   git clone <repo-url>
+   cd weapon-store
+   pnpm install
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. **Environment variables**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   Copy the example env file and fill in your values:
 
-## Deploy on Vercel
+   ```bash
+   cp .env.example .env
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   See [Environment variables](#environment-variables) below.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3. **Database**
+
+   Apply migrations (after setting `DATABASE_URL` in `.env`):
+
+   ```bash
+   pnpm drizzle-kit push
+   ```
+
+   Or generate and run migrations:
+
+   ```bash
+   pnpm drizzle-kit generate
+   pnpm drizzle-kit migrate
+   ```
+
+4. **Run the app**
+
+   ```bash
+   pnpm dev
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000).
+
+## Environment variables
+
+| Variable | Description |
+|----------|-------------|
+| `CREEM_API_KEY` | Creem API key (from Creem dashboard). Use a test key for development. |
+| `CREEM_WEBHOOK_SECRET` | Creem webhook signing secret. Required for `/api/webhook/creem` to verify and handle payment events. |
+| `DATABASE_URL` | PostgreSQL connection string (e.g. Neon connection string with `?sslmode=require`). |
+
+See `.env.example` for a template.
+
+## Project structure
+
+- `app/` – Next.js App Router pages and API routes
+  - `page.tsx` – Home page with “Buy Axe” checkout button
+  - `success/page.tsx` – Post-purchase success page
+  - `api/checkout/route.ts` – Creem checkout handler (GET)
+  - `api/webhook/creem/route.ts` – Creem webhook handler; inserts completed purchases into DB
+- `db/` – Drizzle schema and client
+  - `schema.ts` – `purchases` table (id, productId, email, createdAt)
+  - `drizzle.ts` – DB client
+- `drizzle.config.ts` – Drizzle Kit config (schema path, migrations, `DATABASE_URL`)
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Start Next.js dev server |
+| `pnpm build` | Production build |
+| `pnpm start` | Start production server |
+| `pnpm lint` | Run ESLint |
+| `pnpm drizzle-kit push` | Push schema to DB (dev) |
+| `pnpm drizzle-kit generate` | Generate migrations |
+| `pnpm drizzle-kit migrate` | Run migrations |
+
+## Webhook (production)
+
+For real payments, Creem must reach your webhook. Use a public URL (e.g. deployed on Vercel) and set the webhook URL in the Creem dashboard to:
+
+`https://your-domain.com/api/webhook/creem`
+
+Keep `CREEM_WEBHOOK_SECRET` in sync with the value shown in Creem.
+
+## Learn more
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Creem](https://creem.io) – payments
+- [Drizzle ORM](https://orm.drizzle.team)
+- [Neon](https://neon.tech) – serverless Postgres
